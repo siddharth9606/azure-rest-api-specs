@@ -141,7 +141,7 @@ namespace Azure.AI.Projects;
 // --------------------------------------------------------------------------------
 @@access(EvaluatorDefinitionType, Access.public);
 
-// Hide classes not currently used
+// Rename Target from openai-evaluations to EvaluationTarget.
 @@clientName(Target, "EvaluationTarget", "csharp");
 
 @@clientName(EvalResult.passed, "IsPassed", "csharp");
@@ -181,3 +181,23 @@ namespace Azure.AI.Projects;
 @@alternateType(CronTrigger.startTime, utcDateTime, "csharp");
 @@alternateType(CronTrigger.endTime, utcDateTime, "csharp");
 @@alternateType(ScheduleRun.triggerTime, utcDateTime, "csharp");
+
+// --------------------------------------------------------------------------------
+// DataGenerationJobs sub‐client
+// --------------------------------------------------------------------------------
+// Hide the protocol methods and methods using feature headers
+@@access(DataGenerationJobs.get, Access.internal);
+@@access(DataGenerationJobs.create, Access.internal);
+@@access(DataGenerationJobs.cancel, Access.internal);
+@@access(DataGenerationJobs.delete, Access.internal);
+
+@@clientName(DataGenerationJobType, "DataGenerationJobKind");
+
+// --------------------------------------------------------------------------------
+// EvaluatorGenerationJobs sub‐client
+// --------------------------------------------------------------------------------
+// Hide the protocol methods and methods using feature headers
+@@access(EvaluatorGenerationJobs.get, Access.internal);
+@@access(EvaluatorGenerationJobs.create, Access.internal);
+@@access(EvaluatorGenerationJobs.cancel, Access.internal);
+@@access(EvaluatorGenerationJobs.delete, Access.internal);

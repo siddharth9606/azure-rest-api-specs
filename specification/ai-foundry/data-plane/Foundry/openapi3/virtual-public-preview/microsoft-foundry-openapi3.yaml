@@ -10488,7 +10488,7 @@ components:
           type: string
           description: 'Deployment name for AOAI model. Example: gpt-4o if in AIServices or connection based `connection_name/deployment_name` (e.g. `my-aoai-connection/gpt-4o`).'
       allOf:
-        - $ref: '#/components/schemas/TargetConfig'
+        - $ref: '#/components/schemas/RedTeamTargetConfig'
       description: Azure OpenAI model configuration. The API version would be selected by the service for querying the model.
     BaseCredentials:
       type: object
@@ -11032,6 +11032,7 @@ components:
       required:
         - runtime
         - entry_point
+        - dependency_resolution
       properties:
         runtime:
           type: string
@@ -11041,6 +11042,15 @@ components:
           items:
             type: string
           description: The entry point command and arguments for the code execution.
+        dependency_resolution:
+          allOf:
+            - $ref: '#/components/schemas/CodeDependencyResolution'
+          description: |-
+            How package dependencies are resolved at deployment time. Defaults to `bundled`,
+            where the caller bundles all dependencies into the uploaded zip and the service
+            performs no remote build. `remote_build` instructs the service to build
+            dependencies remotely from the manifest included in the uploaded zip.
+          default: bundled
         content_hash:
           type: string
           description: The SHA-256 hex digest of the uploaded code zip. Set by the service from the `x-ms-code-zip-sha256` request header; read-only in responses and never accepted in request payloads.
@@ -11049,6 +11059,14 @@ components:
       x-ms-foundry-meta:
         required_previews:
           - CodeAgents=V1Preview
+    CodeDependencyResolution:
+      anyOf:
+        - type: string
+        - type: string
+          enum:
+            - bundled
+            - remote_build
+      description: How package dependencies are resolved at deployment time for a code-based hosted agent.
     CompletionMessageToolCallChunk:
       type: object
       required:
@@ -11374,7 +11392,7 @@ components:
       properties:
         metadata:
           allOf:
-            - $ref: '#/components/schemas/CreateAgentVersionFromCodeRequest'
+            - $ref: '#/components/schemas/CreateAgentVersionFromCodeMetadata'
           description: JSON metadata including description and hosted definition.
         code:
           type: string
@@ -11509,7 +11527,7 @@ components:
       properties:
         metadata:
           allOf:
-            - $ref: '#/components/schemas/CreateAgentVersionFromCodeRequest'
+            - $ref: '#/components/schemas/CreateAgentVersionFromCodeMetadata'
           description: JSON metadata including description and hosted definition.
         code:
           type: string
@@ -11518,7 +11536,7 @@ components:
       required:
         - metadata
         - code
-    CreateAgentVersionFromCodeRequest:
+    CreateAgentVersionFromCodeMetadata:
       type: object
       required:
         - definition
@@ -11999,6 +12017,10 @@ components:
       description: LLM model options for data generation jobs.
     DataGenerationTokenUsage:
       type: object
+      required:
+        - prompt_tokens
+        - completion_tokens
+        - total_tokens
       properties:
         prompt_tokens:
           type: integer
@@ -13234,11 +13256,6 @@ components:
           allOf:
             - $ref: '#/components/schemas/InputData'
           description: Data for evaluation.
-        evaluation_level:
-          allOf:
-            - $ref: '#/components/schemas/EvaluationLevel'
-          description: The level at which evaluation is performed. Defaults to 'turn' if not specified.
-          default: turn
         displayName:
           type: string
           description: Display Name for evaluation. It helps to find the evaluation easily in AI Foundry. It does not need to be unique.
@@ -14109,24 +14126,13 @@ components:
       type: object
       required:
         - type
-        - fabric_iq_preview
+        - project_connection_id
       properties:
         type:
           type: string
           enum:
             - fabric_iq_preview
           description: The object type, which is always 'fabric_iq_preview'.
-        fabric_iq_preview:
-          allOf:
-            - $ref: '#/components/schemas/FabricIQPreviewToolParameters'
-          description: The FabricIQ tool parameters.
-      allOf:
-        - $ref: '#/components/schemas/OpenAI.Tool'
-    FabricIQPreviewToolParameters:
-      type: object
-      required:
-        - project_connection_id
-      properties:
         project_connection_id:
           type: string
           description: The ID of the FabricIQ project connection.
@@ -14147,56 +14153,15 @@ components:
               nullable: true
           description: (Optional) Whether the agent requires approval before executing actions. Default is always.
           default: always
-    FabricIQToolCall:
-      type: object
-      required:
-        - type
-        - call_id
-        - arguments
-        - status
-      properties:
-        type:
+        name:
           type: string
-          enum:
-            - fabric_iq_preview_call
-        call_id:
+          description: Optional user-defined name for this tool or configuration.
+        description:
           type: string
-          description: The unique ID of the tool call generated by the model.
-        arguments:
-          type: string
-          description: A JSON string of the arguments to pass to the tool.
-        status:
-          allOf:
-            - $ref: '#/components/schemas/ToolCallStatus'
-          description: The status of the tool call.
+          description: Optional user-defined description for this tool or configuration.
       allOf:
-        - $ref: '#/components/schemas/OpenAI.OutputItem'
-      description: A Fabric IQ tool call.
-    FabricIQToolCallOutput:
-      type: object
-      required:
-        - type
-        - call_id
-        - status
-      properties:
-        type:
-          type: string
-          enum:
-            - fabric_iq_preview_call_output
-        call_id:
-          type: string
-          description: The unique ID of the tool call generated by the model.
-        output:
-          allOf:
-            - $ref: '#/components/schemas/ToolCallOutputContent'
-          description: The output from the Fabric IQ tool call.
-        status:
-          allOf:
-            - $ref: '#/components/schemas/ToolCallStatus'
-          description: The status of the tool call.
-      allOf:
-        - $ref: '#/components/schemas/OpenAI.OutputItem'
-      description: The output of a Fabric IQ tool call.
+        - $ref: '#/components/schemas/OpenAI.Tool'
+      description: A FabricIQ server-side tool.
     FileDataGenerationJobOutput:
       type: object
       required:
@@ -24628,8 +24593,6 @@ components:
             - fabric_dataagent_preview_call_output
             - azure_function_call
             - azure_function_call_output
-            - fabric_iq_preview_call
-            - fabric_iq_preview_call_output
     OpenAI.ItemResourceWebSearchToolCall:
       type: object
       required:
@@ -24720,8 +24683,6 @@ components:
             - fabric_dataagent_preview_call_output
             - azure_function_call
             - azure_function_call_output
-            - fabric_iq_preview_call
-            - fabric_iq_preview_call_output
     OpenAI.ItemWebSearchToolCall:
       type: object
       required:
@@ -25522,8 +25483,6 @@ components:
           browser_automation_preview_call_output: '#/components/schemas/BrowserAutomationToolCallOutput'
           fabric_dataagent_preview_call: '#/components/schemas/FabricDataAgentToolCall'
           fabric_dataagent_preview_call_output: '#/components/schemas/FabricDataAgentToolCallOutput'
-          fabric_iq_preview_call: '#/components/schemas/FabricIQToolCall'
-          fabric_iq_preview_call_output: '#/components/schemas/FabricIQToolCallOutput'
           azure_function_call: '#/components/schemas/AzureFunctionToolCall'
           azure_function_call_output: '#/components/schemas/AzureFunctionToolCallOutput'
           a2a_preview_call: '#/components/schemas/A2AToolCall'
@@ -26244,8 +26203,6 @@ components:
             - fabric_dataagent_preview_call_output
             - azure_function_call
             - azure_function_call_output
-            - fabric_iq_preview_call
-            - fabric_iq_preview_call_output
     OpenAI.OutputItemWebSearchToolCall:
       type: object
       required:
@@ -30902,7 +30859,7 @@ components:
           readOnly: true
         target:
           allOf:
-            - $ref: '#/components/schemas/TargetConfig'
+            - $ref: '#/components/schemas/RedTeamTargetConfig'
           description: Target configuration for the red-team run.
       description: Red team details.
     RedTeamEvalRunDataSource:
@@ -30983,6 +30940,19 @@ components:
       allOf:
         - $ref: '#/components/schemas/ItemGenerationParams'
       description: Represents the parameters for red team seed prompts item generation.
+    RedTeamTargetConfig:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Type of the model configuration.
+      discriminator:
+        propertyName: type
+        mapping:
+          AzureOpenAIModel: '#/components/schemas/AzureOpenAIModelConfiguration'
+      description: Abstract class for target configuration.
     RedTeamTaxonomyItemGenerationParams:
       type: object
       required:
@@ -31720,19 +31690,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/EvalRunDataSource'
       description: Represents a data source for target-based completion evaluation configuration.
-    TargetConfig:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          description: Type of the model configuration.
-      discriminator:
-        propertyName: type
-        mapping:
-          AzureOpenAIModel: '#/components/schemas/AzureOpenAIModelConfiguration'
-      description: Abstract class for target configuration.
     TargetUpdate:
       type: object
       required:
@@ -32567,35 +32524,25 @@ components:
       type: object
       required:
         - type
-        - work_iq_preview
+        - project_connection_id
       properties:
         type:
           type: string
           enum:
             - work_iq_preview
           description: The object type, which is always 'work_iq_preview'.
+        project_connection_id:
+          type: string
+          description: The ID of the WorkIQ project connection.
         name:
           type: string
           description: Optional user-defined name for this tool or configuration.
         description:
           type: string
           description: Optional user-defined description for this tool or configuration.
-        work_iq_preview:
-          allOf:
-            - $ref: '#/components/schemas/WorkIQPreviewToolParameters'
-          description: The WorkIQ tool parameters.
       allOf:
         - $ref: '#/components/schemas/OpenAI.Tool'
       description: A WorkIQ server-side tool.
-    WorkIQPreviewToolParameters:
-      type: object
-      required:
-        - project_connection_id
-      properties:
-        project_connection_id:
-          type: string
-          description: The ID of the WorkIQ project connection.
-      description: The WorkIQ tool parameters.
     WorkflowActionOutputItem:
       type: object
       required:

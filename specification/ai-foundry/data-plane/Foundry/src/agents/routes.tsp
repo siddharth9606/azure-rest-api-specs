@@ -51,7 +51,6 @@ interface Agents {
     "x-ms-foundry-meta",
     #{ required_previews: #[AgentDefinitionOptInKeys.code_agents_v1_preview] }
   )
-  @removed(Versions.v1)
   createAgentFromCode is FoundryDataPlanePreviewOperation<
     AgentDefinitionOptInKeys,
     {
@@ -66,7 +65,7 @@ interface Agents {
       @header("x-ms-code-zip-sha256")
       codeZipSha256: string;
 
-      @multipartBody body: CreateAgentFromCodeContent;
+      @multipartBody content: CreateAgentFromCodeContent;
     },
     AgentObject
   >;
@@ -103,7 +102,6 @@ interface Agents {
     "x-ms-foundry-meta",
     #{ required_previews: #[AgentDefinitionOptInKeys.code_agents_v1_preview] }
   )
-  @removed(Versions.v1)
   updateAgentFromCode is FoundryDataPlanePreviewOperation<
     AgentDefinitionOptInKeys,
     {
@@ -123,7 +121,7 @@ interface Agents {
       @header("x-ms-code-zip-sha256")
       codeZipSha256: string;
 
-      @multipartBody body: CreateAgentVersionFromCodeContent;
+      @multipartBody content: CreateAgentVersionFromCodeContent;
     },
     AgentObject
   >;
@@ -313,7 +311,6 @@ interface Agents {
     "x-ms-foundry-meta",
     #{ required_previews: #[AgentDefinitionOptInKeys.code_agents_v1_preview] }
   )
-  @removed(Versions.v1)
   createAgentVersionFromCode is FoundryDataPlanePreviewOperation<
     AgentDefinitionOptInKeys,
     {
@@ -333,7 +330,7 @@ interface Agents {
       @header("x-ms-code-zip-sha256")
       codeZipSha256: string;
 
-      @multipartBody body: CreateAgentVersionFromCodeContent;
+      @multipartBody content: CreateAgentVersionFromCodeContent;
     },
     AgentVersionObject
   >;
@@ -349,7 +346,6 @@ interface Agents {
     "x-ms-foundry-meta",
     #{ required_previews: #[AgentDefinitionOptInKeys.code_agents_v1_preview] }
   )
-  @removed(Versions.v1)
   downloadAgentVersionCode is FoundryDataPlanePreviewOperation<
     AgentDefinitionOptInKeys.code_agents_v1_preview,
     {
@@ -373,7 +369,6 @@ interface Agents {
     "x-ms-foundry-meta",
     #{ required_previews: #[AgentDefinitionOptInKeys.code_agents_v1_preview] }
   )
-  @removed(Versions.v1)
   downloadAgentCode is FoundryDataPlanePreviewOperation<
     AgentDefinitionOptInKeys.code_agents_v1_preview,
     {
